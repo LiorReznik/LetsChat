@@ -28,7 +28,7 @@ public class InputHandler extends IOHandler {
     /**
      * the method prints the message that was obtained from the socket to the standard output
      */
-    @Override
+    @Deprecated
     protected void handleStream() {
         String msg = this.read();
         if (msg != null) {
@@ -43,7 +43,7 @@ public class InputHandler extends IOHandler {
      *
      * @return message
      */
-    private String read() {
+    public String read() {
         String msg = null;
         try {
             msg = this.stream.readUTF();
@@ -51,4 +51,5 @@ public class InputHandler extends IOHandler {
         }
         return msg;
     }
+
 }

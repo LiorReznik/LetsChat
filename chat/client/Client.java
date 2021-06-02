@@ -6,13 +6,17 @@ import chat.util.OutputHandler;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 public class Client {
-    private Socket socket;
-    private String ip;
-    private int port;
+    private final Scanner scan = new Scanner(System.in);
+    private Socket socket; //TODO: final?
+    private String ip;//TODO: reomve?
+    private int port;//TODO: reomve?
+    private InputHandler inputChannel; //TODO: final?
+    private OutputHandler outputChannel; //TODO: final?
 
     {
         System.out.println("Client started!");
@@ -20,8 +24,40 @@ public class Client {
 
     public static void main(String[] args) {
         //TODO: Add args from command line and renter option if one of them is not working good
-        new Client().manage("127.0.0.1", 65535);
+        Client client = new Client();
+        if (client.openConnection("127.0.0.1", 65535)) {
+            client.manageInteraction();
+        }
+    }
 
+    private String getMsgFromStandardInput() {
+        if (this.scan.hasNext()) {
+            return this.scan.nextLine();
+        }
+        return null;
+    }
+
+    private void sendMsg(String msg) {
+        this.outputChannel.write(msg);
+    }
+
+    private void manageInteraction() {
+        while (!this.socket.isClosed()) {
+            if (this.scan.hasNext()) {
+                String msg = getMsgFromStandardInput();
+                this.sendMsg(msg);
+                if ("/exit".equals(msg)) {
+                    this.closeConnection();
+                    break;
+                }
+                msg = this.inputChannel.read();
+                if (msg != null) {
+                    System.out.println(msg);
+                }
+
+
+            }
+        }
     }
 
     /**
@@ -30,16 +66,11 @@ public class Client {
      * @param ip   -> the ip address of the server that we want to connect with
      * @param port -> the port within the server
      */
-    void manage(String ip, int port) {
+    boolean openConnection(String ip, int port) {
         if (this.setPort(port) && this.setIp(ip)) {
-            if (this.connectToServer() && this.openIO()) {
-                this.takeBreak(400);
-                this.closeConnection();
-            }
-
+            return this.connectToServer() && this.openIO();
         }
-
-
+        return false;
     }
 
     /**
@@ -110,8 +141,8 @@ public class Client {
      */
     private boolean openIO() {
         try {
-            new InputHandler(this.socket).start();
-            new OutputHandler(this.socket).start();
+            this.inputChannel = new InputHandler(this.socket);
+            this.outputChannel = new OutputHandler(this.socket);
             return true;
         } catch (IOException | NullPointerException e) {
             System.err.println("Could not open IO Streams, closing connection");
