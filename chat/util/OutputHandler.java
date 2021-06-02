@@ -8,7 +8,13 @@ import java.util.Scanner;
 public class OutputHandler extends IOHandler {
     private DataOutputStream stream;
 
-    public OutputHandler(Socket socket) throws IOException {
+
+    /**
+     * @param socket the socket that we want to handle its IO
+     * @throws IOException          if couldn't open stream
+     * @throws NullPointerException if the socket ref is null
+     */
+    public OutputHandler(Socket socket) throws IOException, NullPointerException {
         super(socket);
     }
 
@@ -17,16 +23,19 @@ public class OutputHandler extends IOHandler {
         this.stream = new DataOutputStream(this.socket.getOutputStream());
     }
 
+    /**
+     * write message to the socket
+     */
     @Override
     protected void handleStream() {
-        Scanner scan = new Scanner(System.in);
         try {
-            if(scan.hasNextLine()) {
+            Scanner scan = new Scanner(System.in);
+            if (scan.hasNextLine()) {
                 this.stream.writeUTF(scan.nextLine());
             }
-        } catch (IOException ignored) { }
+        } catch (IOException ignored) {
+        }
     }
-
 
 
 }

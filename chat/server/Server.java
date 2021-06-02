@@ -1,35 +1,38 @@
 package chat.server;
 
-import chat.util.InputHandler;
-import chat.util.OutputHandler;
-
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 
 public class Server {
+    private final int PORT;
     private ServerSocket serverSocket;
     private Socket clientSocket;
-    private final int PORT;
-    public static void main(final String[] args) {
-        new Server().start();
+
+    {
+        System.out.println("Server started!");
     }
 
     private Server() {
         this(65535);
     }
+
+
     private Server(int port) {
         this.PORT = port >= 0 || port <= 65535 ? port : 65535;
     }
 
-    private void start() {
-        if(openListener()) {
-            System.out.println("Server started!");
+    public static void main(String[] args) {
+        //TODO: Add args from command line and renter option if one of them is not working good
+        new Server(65535).start();
+
+    }
+
+    void start() {
+        if (this.openListener()) {
             this.createClientHandler();
             this.takeBreak(400);
             this.closeSocket();
-
         }
     }
 
@@ -43,6 +46,7 @@ public class Server {
             return false;
         }
     }
+
     private void takeBreak(long mills) {
         try {
             Thread.sleep(mills);
@@ -58,7 +62,7 @@ public class Server {
     }
 
     private void createClientHandler() {
-         this.clientSocket = acceptConnection();
+        this.clientSocket = acceptConnection();
         if (this.clientSocket != null) {
             new ClientHandler(this.clientSocket).start();
         }
@@ -67,8 +71,8 @@ public class Server {
     private Socket acceptConnection() {
         try {
             return this.serverSocket.accept();
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
         return null;
     }
-
 }
