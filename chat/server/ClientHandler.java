@@ -12,8 +12,10 @@ class ClientHandler extends Thread {
     private final int CLIENT_ID;
     private final InputHandler inputChannel;
     private final OutputHandler outputChannel;
+    private final ChatSessionData sessionData;
+    private String name;
 
-    ClientHandler(Socket socket) throws NullPointerException {
+    ClientHandler(Socket socket, ChatSessionData sessionData) throws NullPointerException {
         if (socket == null) {
             throw new NullPointerException("socket is null");
         }
@@ -30,61 +32,67 @@ class ClientHandler extends Thread {
         }
         this.inputChannel = in;
         this.outputChannel = out;
-        this.showConnectionInfo("Client %d connected!%n");
+        this.sessionData = sessionData;
+        // this.onLogin();
     }
 
-    private static int wordsCounter(String msg) {
-        return msg == null ? 0 : msg.split(" ").length;
+    private void onLogin() {
+        this.sendMsg(this.formatMsg("write your name", true));
+        this.setClientName();
+        this.sendMsg(this.sessionData.getLastMessages(10));
     }
 
-    @Deprecated
-    private void openIO() {
-        try {
-            new InputHandler(this.socket);
-            new OutputHandler(this.socket);
-        } catch (IOException | NullPointerException e) {
-            System.err.println("Could not open IO Streams, closing connection");
-            this.closeConnection();
+    private void setClientName() {
+        while (!this.socket.isClosed()) {//while(true) {
+            String name = this.inputChannel.read();
+            if (name != null && this.sessionData.addUser(name, this)) {
+                this.name = name;
+                break;
+            } else {
+                this.sendMsg(this.formatMsg("this name is already taken! Choose another one.", true));
+            }
         }
+
+    }
+
+    private String formatMsg(String msg, boolean isServer) {
+        return String.format("%s: %s", isServer ? "Server" : this.name, msg);
+    }
+
+    void sendMsg(String msg) {
+        this.outputChannel.write(msg);
     }
 
     private void closeConnection() {
         try {
             this.socket.close();
-            this.showConnectionInfo("Client %d disconnected!%n");
         } catch (IOException ignored) {
         }
     }
 
-    private String formatMsgForClient(String msg) {
-        int wordCount = wordsCounter(msg);
-        return String.format("Count is %d%n", wordCount);
-    }
-
-    private void showConnectionInfo(String msg) {
-        System.out.printf(msg, this.CLIENT_ID);
-    }
-
-    private void showMsgFromAndToClient(String msgFromClient, String msgToClient) {
-        System.out.printf("Client %d sent: %s%n", this.CLIENT_ID, msgFromClient);
-        System.out.printf("Sent to client %d: %s", this.CLIENT_ID, msgToClient);
-    }
-
-    @Override
-    public void run() {
+    private void chat() {
         while (!this.socket.isClosed()) {
             String msg = this.inputChannel.read();
             if (msg != null) {
                 if ("/exit".equals(msg)) {
-                    this.closeConnection();
                     break;
                 }
-                String toClient = formatMsgForClient(msg);
-                this.outputChannel.write(toClient);
-                this.showMsgFromAndToClient(msg, toClient);
+                this.sessionData.addAndSendmSG(this.formatMsg(msg, false));
             }
+
         }
     }
 
+    private void onExit() {
+        this.sessionData.removeUser(this.name);
+        this.closeConnection();
+    }
+
+    @Override
+    public void run() {
+        this.onLogin();
+        this.chat();
+        this.onExit();
+    }
 
 }

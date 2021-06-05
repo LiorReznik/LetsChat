@@ -5,6 +5,9 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 public class Server {
+    // private final List<ClientHandler> clients;
+    // private final List<String> messages;
+    final ChatSessionData sessionData;
     private final int PORT;
     private ServerSocket serverSocket; //TODO: make final?
 
@@ -18,6 +21,7 @@ public class Server {
 
     private Server(int port) {
         this.PORT = port >= 0 || port <= 65535 ? port : 65535;
+        this.sessionData = new ChatSessionData();
     }
 
     public static void main(String[] args) {
@@ -44,14 +48,6 @@ public class Server {
         }
     }
 
-    @Deprecated
-    private void takeBreak(long mills) {
-        try {
-            Thread.sleep(mills);
-        } catch (InterruptedException e) {
-        }
-    }
-
     public void closeSocket() {
         try {
             this.serverSocket.close();
@@ -67,7 +63,7 @@ public class Server {
         while (!this.serverSocket.isClosed()) {
             Socket clientSocket = acceptConnection();
             if (clientSocket != null) {
-                new ClientHandler(clientSocket).start();
+                new ClientHandler(clientSocket, this.sessionData).start();
             }
         }
     }

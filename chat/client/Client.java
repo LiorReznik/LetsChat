@@ -11,10 +11,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 public class Client {
+    private static final Pattern IPv4_PATTERN =
+            Pattern.compile("^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\." +
+                    "(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\." +
+                    "(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\." +
+                    "(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$");
     private final Scanner scan = new Scanner(System.in);
     private Socket socket; //TODO: final?
-    private String ip;//TODO: reomve?
-    private int port;//TODO: reomve?
     private InputHandler inputChannel; //TODO: final?
     private OutputHandler outputChannel; //TODO: final?
 
@@ -22,12 +25,16 @@ public class Client {
         System.out.println("Client started!");
     }
 
+    private Client(String ip, int port) {
+        if (this.openConnection(ip, port)) {
+            new Thread(this::handleInput).start();
+            this.handleOutput();
+        }
+    }
+
     public static void main(String[] args) {
         //TODO: Add args from command line and renter option if one of them is not working good
-        Client client = new Client();
-        if (client.openConnection("127.0.0.1", 65535)) {
-            client.manageInteraction();
-        }
+        new Client("127.0.0.1", 65535);
     }
 
     private String getMsgFromStandardInput() {
@@ -38,27 +45,31 @@ public class Client {
     }
 
     private void sendMsg(String msg) {
-        this.outputChannel.write(msg);
+        if (msg != null) {
+            this.outputChannel.write(msg);
+        }
     }
 
-    private void manageInteraction() {
+    private void handleInput() {
         while (!this.socket.isClosed()) {
-            if (this.scan.hasNext()) {
-                String msg = getMsgFromStandardInput();
-                this.sendMsg(msg);
-                if ("/exit".equals(msg)) {
-                    this.closeConnection();
-                    break;
-                }
-                msg = this.inputChannel.read();
-                if (msg != null) {
-                    System.out.println(msg);
-                }
+            String msg = this.inputChannel.read();
+            if (msg != null) {
+                System.out.println(msg);
+            }
+        }
 
+    }
 
+    private void handleOutput() {
+        while (!this.socket.isClosed()) {
+            String msg = getMsgFromStandardInput();
+            this.sendMsg(msg);
+            if ("/exit".equals(msg)) {
+                this.closeConnection();
             }
         }
     }
+
 
     /**
      * method to manage the client from the connection establishment and till closing
@@ -66,9 +77,9 @@ public class Client {
      * @param ip   -> the ip address of the server that we want to connect with
      * @param port -> the port within the server
      */
-    boolean openConnection(String ip, int port) {
-        if (this.setPort(port) && this.setIp(ip)) {
-            return this.connectToServer() && this.openIO();
+    private boolean openConnection(String ip, int port) {
+        if (this.validatePort(port) && this.validateIp(ip)) {
+            return this.connectToServer(ip, port) && this.openIO();
         }
         return false;
     }
@@ -79,13 +90,8 @@ public class Client {
      * @param ip the address of the server
      * @return true if the operation was successful or false otherwise
      */
-    boolean setIp(String ip) {
-        Pattern IPv4_PATTERN = Pattern.compile("^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\." +
-                "(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\." +
-                "(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\." +
-                "(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$");
+    private boolean validateIp(String ip) {
         if (ip != null && IPv4_PATTERN.matcher(ip).matches()) {
-            this.ip = ip;
             return true;
         }
         System.err.println("Non valid ip address, exiting");
@@ -98,9 +104,8 @@ public class Client {
      * @param port the port of the remoted server that we want to connect to (valid port should be with in [0,65535]
      * @return true if the operation was successful or false otherwise
      */
-    boolean setPort(int port) {
+    private boolean validatePort(int port) {
         if (port >= 0 && port <= 65535) {
-            this.port = port;
             return true;
         }
         System.err.println("Non valid port, exiting");
@@ -112,11 +117,11 @@ public class Client {
      *
      * @return true if the connection was established or false if the given ip or port isn't right
      */
-    private boolean connectToServer() {
+    private boolean connectToServer(String ip, int port) {
         boolean result;
         while (true) {
             try {
-                this.socket = new Socket(this.ip, this.port);
+                this.socket = new Socket(ip, port);
                 result = true;
                 break;
             } catch (UnknownHostException e) {
@@ -161,10 +166,5 @@ public class Client {
         }
     }
 
-    private void takeBreak(long mills) {
-        try {
-            Thread.sleep(mills);
-        } catch (InterruptedException ignored) {
-        }
-    }
+
 }
