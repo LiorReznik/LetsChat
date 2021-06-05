@@ -22,25 +22,30 @@ public class Server {
     private Server(int port) {
         this.PORT = port >= 0 || port <= 65535 ? port : 65535;
         this.sessionData = new ChatSessionData();
+
     }
 
     public static void main(String[] args) {
         //TODO: Add args from command line and renter option if one of them is not working good
-        new Server(65535).start(5000);
+        new Server(65535).start();
+
 
     }
 
-    void start(int time) {
-        if (this.openListener(time)) {
-            this.createClientHandler();
+    void start() {
+        if (this.openListener()) {
+            new Thread(() -> {
+                while (!Thread.currentThread().isInterrupted()) {
+                    this.createClientHandler();
+                }
+            }).start();
         }
     }
 
-    private boolean openListener(int time) {
-        //todo: rethink maybe run in a loop till successes
+    private boolean openListener() {
         try {
             this.serverSocket = new ServerSocket(this.PORT);
-            this.serverSocket.setSoTimeout(time);
+            //     this.serverSocket.setSoTimeout(time);
             return true;
         } catch (IOException e) {
             System.err.println("Could not open server, exiting");
