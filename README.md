@@ -20,7 +20,6 @@ in this project I have used the following programming principles:
 2. IO streams.
 3. OOP and Inheritance.
 4. Multithreading.
-5. Generics (Collections).
 
 future possible addons:
 1. private session between two users.
