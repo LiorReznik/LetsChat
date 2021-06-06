@@ -12,14 +12,15 @@ server side:
 adds the client handler alongside with its name to the data session, if the name already exists the server asks for another name.
 5. after that the user gets the 10 last messages that was sent.
 6. the user can send messages to the whole group of connected users.
-7. if the user enters "/exit" the socket on the client disconnected. at the server-side 
-the socket disconnected and the client handler thread is removed from the active users.
+7. to exit, the user should enter "/exit", afterwards the socket on the client will disconnect. and at the server-side 
+the socket that associated with the client will disconnect as well and the client handler thread will be removed from the active users.
 
 in this project I have used the following programming principles:
 1. Socket Networking.
 2. IO streams.
 3. OOP and Inheritance.
 4. Multithreading.
+
 
 future possible addons:
 1. private session between two users.
